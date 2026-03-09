@@ -1,0 +1,22 @@
+# RetinaAI Backend — Python dependencies
+
+# Web framework
+flask==3.0.3
+flask-cors==4.0.1
+
+# HTTP requests (for TF Serving mode)
+requests==2.32.3
+
+# Image processing (must match your training pipeline)
+opencv-python==4.10.0.84
+numpy==1.26.4
+Pillow==10.4.0
+
+# TensorFlow (only required for DIRECT_TF mode)
+# Comment out if using TF_SERVING mode exclusively
+tensorflow==2.16.1
+
+# Utilities
+python-dotenv==1.0.1
+werkzeug==3.0.3
+gunicorn==22.0.0   # for production deployment

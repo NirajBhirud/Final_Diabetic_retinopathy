@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RetinaAI — Diabetic Retinopathy Detection</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --teal:       #0A7EA4;
+      --teal-light: #E6F4FA;
+      --teal-mid:   #5BB8D4;
+      --sky:        #F0F8FC;
+      --white:      #FFFFFF;
+      --slate:      #2C3E50;
+      --muted:      #637381;
+      --border:     #D8EBF3;
+      --accent:     #E8F6EC;
+      --green:      #27AE60;
+      --warn:       #E67E22;
+      --danger:     #E74C3C;
+      --radius:     14px;
+      --shadow:     0 4px 24px rgba(10,126,164,0.10);
+      --shadow-lg:  0 12px 48px rgba(10,126,164,0.15);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--white);
+      color: var(--slate);
+      line-height: 1.6;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      background: rgba(255,255,255,0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 48px;
+      height: 68px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.35rem; font-weight: 700;
+      color: var(--teal); text-decoration: none;
+    }
+    .nav-logo span { color: var(--slate); }
+    .nav-logo .dot { color: var(--teal); }
+    .logo-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--teal), var(--teal-mid));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .logo-icon svg { width: 20px; height: 20px; fill: white; }
+    .nav-links {
+      display: flex; gap: 32px; list-style: none;
+    }
+    .nav-links a {
+      text-decoration: none; font-size: 0.9rem; font-weight: 500;
+      color: var(--muted); transition: color .2s;
+    }
+    .nav-links a:hover { color: var(--teal); }
+    .nav-cta {
+      background: var(--teal); color: white;
+      padding: 10px 24px; border-radius: 8px;
+      text-decoration: none; font-weight: 600; font-size: 0.88rem;
+      transition: background .2s, transform .15s;
+    }
+    .nav-cta:hover { background: #086d8e; transform: translateY(-1px); }
+
+    /* ── HERO ── */
+    .hero {
+      padding-top: 68px;
+      background: linear-gradient(135deg, #EAF7FC 0%, #F5FBFF 50%, #FEFEFE 100%);
+      min-height: 100vh;
+      display: flex; align-items: center;
+      position: relative; overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; top: -120px; right: -120px;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(91,184,212,0.18) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: -80px; left: -80px;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(10,126,164,0.08) 0%, transparent 70%);
+      border-radius: 50%;
+    }
+    .hero-inner {
+      max-width: 1200px; margin: 0 auto; padding: 80px 48px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 64px;
+      align-items: center; position: relative; z-index: 1;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--teal-light); border: 1px solid #B3DFF0;
+      border-radius: 20px; padding: 6px 16px; font-size: 0.8rem;
+      font-weight: 600; color: var(--teal); margin-bottom: 24px;
+      animation: fadeUp .6s ease both;
+    }
+    .hero-badge .pulse {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--teal);
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%,100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: .5; transform: scale(1.3); }
+    }
+    h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 3.2rem; line-height: 1.15; font-weight: 700;
+      color: var(--slate); margin-bottom: 20px;
+      animation: fadeUp .7s ease .1s both;
+    }
+    h1 em { color: var(--teal); font-style: normal; }
+    .hero-sub {
+      font-size: 1.1rem; color: var(--muted); max-width: 500px;
+      margin-bottom: 36px; font-weight: 400;
+      animation: fadeUp .7s ease .2s both;
+    }
+    .hero-actions {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      animation: fadeUp .7s ease .3s both;
+    }
+    .btn-primary {
+      background: var(--teal); color: white;
+      padding: 14px 32px; border-radius: 10px;
+      text-decoration: none; font-weight: 600; font-size: 0.95rem;
+      border: none; cursor: pointer;
+      transition: background .2s, transform .15s, box-shadow .2s;
+      box-shadow: 0 4px 16px rgba(10,126,164,0.3);
+    }
+    .btn-primary:hover {
+      background: #086d8e; transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(10,126,164,0.35);
+    }
+    .btn-outline {
+      background: white; color: var(--teal);
+      padding: 14px 32px; border-radius: 10px;
+      text-decoration: none; font-weight: 600; font-size: 0.95rem;
+      border: 2px solid var(--teal); cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-outline:hover { background: var(--teal-light); }
+    .hero-stats {
+      display: flex; gap: 32px; margin-top: 48px;
+      animation: fadeUp .7s ease .4s both;
+    }
+    .stat { }
+    .stat-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700; color: var(--teal);
+    }
+    .stat-label { font-size: 0.8rem; color: var(--muted); font-weight: 500; }
+
+    /* Hero visual */
+    .hero-visual {
+      display: flex; justify-content: center; align-items: center;
+      animation: fadeIn .9s ease .2s both;
+    }
+    .eye-card {
+      width: 380px; height: 380px;
+      background: white;
+      border-radius: 32px;
+      box-shadow: var(--shadow-lg);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      position: relative; overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .eye-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--teal), var(--teal-mid));
+    }
+    .retina-circle {
+      width: 220px; height: 220px; border-radius: 50%;
+      background: radial-gradient(circle at 40% 40%,
+        #c97a3a 0%, #8B4513 25%, #5a2d0c 55%, #2d1506 80%, #1a0a04 100%);
+      position: relative;
+      box-shadow: 0 0 40px rgba(139,69,19,0.3);
+      animation: slowSpin 20s linear infinite;
+    }
+    @keyframes slowSpin {
+      from { filter: hue-rotate(0deg); }
+      to   { filter: hue-rotate(10deg); }
+    }
+    .retina-circle::after {
+      content: '';
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 30px; height: 30px; border-radius: 50%;
+      background: radial-gradient(circle, #FFE0A0, #FFB347);
+      box-shadow: 0 0 20px rgba(255,179,71,0.6);
+    }
+    .scan-line {
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(91,184,212,0.9), transparent);
+      animation: scan 2.5s ease-in-out infinite;
+    }
+    @keyframes scan {
+      0%   { top: 10%; opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { top: 90%; opacity: 0; }
+    }
+    .analysis-tags {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      justify-content: center; padding: 24px;
+      margin-top: 8px;
+    }
+    .tag {
+      padding: 5px 12px; border-radius: 20px;
+      font-size: 0.72rem; font-weight: 600;
+    }
+    .tag-green  { background: var(--accent); color: var(--green); border: 1px solid #A3D9B3; }
+    .tag-yellow { background: #FEF9EC; color: var(--warn); border: 1px solid #F5D99A; }
+    .tag-red    { background: #FDECEA; color: var(--danger); border: 1px solid #F5ADA8; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* ── SECTION COMMONS ── */
+    section { padding: 96px 48px; }
+    .section-inner { max-width: 1200px; margin: 0 auto; }
+    .section-tag {
+      display: inline-block;
+      background: var(--teal-light); color: var(--teal);
+      border-radius: 20px; padding: 5px 16px;
+      font-size: 0.78rem; font-weight: 700;
+      letter-spacing: .04em; text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.4rem; font-weight: 700;
+      color: var(--slate); line-height: 1.2; margin-bottom: 16px;
+    }
+    h2 em { color: var(--teal); font-style: normal; }
+    .section-lead {
+      font-size: 1.05rem; color: var(--muted);
+      max-width: 600px; margin-bottom: 48px;
+    }
+
+    /* ── ABOUT ── */
+    #about { background: white; }
+    .about-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center;
+    }
+    .about-text h2 { margin-bottom: 20px; }
+    .about-body {
+      font-size: 1rem; color: var(--muted); line-height: 1.75; margin-bottom: 20px;
+    }
+    .about-features { display: flex; flex-direction: column; gap: 16px; margin-top: 32px; }
+    .feature-row {
+      display: flex; align-items: flex-start; gap: 16px;
+      padding: 16px; border-radius: 12px;
+      border: 1px solid var(--border); background: var(--sky);
+      transition: box-shadow .2s, transform .2s;
+    }
+    .feature-row:hover { box-shadow: var(--shadow); transform: translateX(4px); }
+    .feature-icon {
+      width: 44px; height: 44px; min-width: 44px; border-radius: 10px;
+      background: var(--teal-light); display: flex; align-items: center; justify-content: center;
+    }
+    .feature-icon svg { width: 22px; height: 22px; stroke: var(--teal); fill: none; stroke-width: 2; }
+    .feature-text h4 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
+    .feature-text p  { font-size: 0.85rem; color: var(--muted); }
+
+    /* About visual */
+    .pipeline-card {
+      background: var(--sky); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+      box-shadow: var(--shadow);
+    }
+    .pipeline-title {
+      font-weight: 700; font-size: 0.85rem; color: var(--teal);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 24px;
+    }
+    .pipeline-step {
+      display: flex; align-items: center; gap: 16px; margin-bottom: 16px;
+    }
+    .pipe-num {
+      width: 32px; height: 32px; min-width: 32px;
+      background: white; border: 2px solid var(--teal-mid);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 0.8rem; font-weight: 700; color: var(--teal);
+    }
+    .pipe-bar {
+      flex: 1; height: 42px; background: white;
+      border-radius: 10px; border: 1px solid var(--border);
+      display: flex; align-items: center; padding: 0 16px;
+      font-size: 0.88rem; font-weight: 500;
+    }
+    .pipe-connector {
+      width: 2px; height: 16px; background: var(--border);
+      margin-left: 15px; margin-bottom: 0; margin-top: -8px;
+    }
+    .accuracy-badge {
+      margin-top: 24px; background: var(--accent);
+      border: 1px solid #A3D9B3; border-radius: 12px;
+      padding: 16px 20px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .accuracy-num {
+      font-family: 'Playfair Display', serif;
+      font-size: 2rem; font-weight: 700; color: var(--green);
+    }
+    .accuracy-label { font-size: 0.85rem; color: var(--muted); }
+
+    /* ── GRADES ── */
+    #grades { background: var(--sky); }
+    .grades-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px;
+    }
+    .grade-card {
+      background: white; border-radius: 16px;
+      border: 1px solid var(--border);
+      padding: 24px 16px; text-align: center;
+      transition: box-shadow .25s, transform .25s;
+      cursor: default;
+    }
+    .grade-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-6px); }
+    .grade-icon {
+      width: 56px; height: 56px; border-radius: 14px;
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+    }
+    .grade-label-num {
+      display: inline-block;
+      font-size: 0.7rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 12px; margin-bottom: 10px;
+    }
+    .grade-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 8px; }
+    .grade-desc { font-size: 0.8rem; color: var(--muted); line-height: 1.5; }
+
+    .g0 .grade-icon { background: #E8F6EC; }
+    .g0 .grade-label-num { background: #E8F6EC; color: #27AE60; }
+    .g1 .grade-icon { background: #EAF4FF; }
+    .g1 .grade-label-num { background: #EAF4FF; color: #2980B9; }
+    .g2 .grade-icon { background: #FEF9EC; }
+    .g2 .grade-label-num { background: #FEF9EC; color: #E67E22; }
+    .g3 .grade-icon { background: #FEF0E6; }
+    .g3 .grade-label-num { background: #FEF0E6; color: #E74C3C; }
+    .g4 .grade-icon { background: #FDECEA; }
+    .g4 .grade-label-num { background: #FDECEA; color: #C0392B; }
+
+    /* ── HOW IT WORKS ── */
+    #how { background: white; }
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 0;
+      position: relative;
+    }
+    .steps-grid::before {
+      content: '';
+      position: absolute; top: 36px; left: 12.5%; right: 12.5%;
+      height: 2px; background: var(--border);
+    }
+    .step { text-align: center; padding: 0 16px; }
+    .step-circle {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--teal-light); border: 3px solid var(--teal);
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 20px; position: relative; z-index: 1;
+      transition: background .2s, transform .2s;
+    }
+    .step:hover .step-circle { background: var(--teal); transform: scale(1.08); }
+    .step:hover .step-circle svg { stroke: white; }
+    .step-circle svg { width: 28px; height: 28px; stroke: var(--teal); fill: none; stroke-width: 2; transition: stroke .2s; }
+    .step h4 { font-weight: 700; font-size: 1rem; margin-bottom: 8px; }
+    .step p   { font-size: 0.84rem; color: var(--muted); line-height: 1.6; }
+
+    /* ── TECH STACK ── */
+    #tech { background: var(--sky); }
+    .tech-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;
+    }
+    .tech-card {
+      background: white; border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 20px;
+      text-align: center;
+      transition: box-shadow .2s, transform .2s;
+    }
+    .tech-card:hover { box-shadow: var(--shadow); transform: translateY(-4px); }
+    .tech-logo {
+      width: 56px; height: 56px; border-radius: 14px;
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem;
+    }
+    .tech-card h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 6px; }
+    .tech-card p  { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── RESULTS ── */
+    #results { background: white; }
+    .results-grid {
+      display: grid; grid-template-columns: 1fr 2fr; gap: 48px; align-items: start;
+    }
+    .metric-cards { display: flex; flex-direction: column; gap: 16px; }
+    .metric-card {
+      background: var(--sky); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 24px;
+      transition: box-shadow .2s;
+    }
+    .metric-card:hover { box-shadow: var(--shadow); }
+    .metric-card-label {
+      font-size: 0.78rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px;
+    }
+    .metric-card-val {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.2rem; font-weight: 700; color: var(--teal);
+    }
+    .metric-card-note { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
+
+    /* bar chart */
+    .chart-card {
+      background: var(--sky); border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px;
+    }
+    .chart-title { font-weight: 700; font-size: 0.9rem; color: var(--slate); margin-bottom: 24px; }
+    .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .bar-label { font-size: 0.8rem; width: 120px; min-width: 120px; color: var(--muted); }
+    .bar-track { flex: 1; height: 12px; background: var(--border); border-radius: 6px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 6px; transition: width 1s ease; }
+    .bar-pct { font-size: 0.8rem; font-weight: 700; color: var(--slate); min-width: 40px; text-align: right; }
+
+    /* ── DEMO / UPLOAD ── */
+    #demo { background: linear-gradient(135deg, var(--teal-light) 0%, #F0F8FC 100%); }
+    .demo-inner { max-width: 780px; margin: 0 auto; text-align: center; }
+    .demo-inner h2 { margin-bottom: 12px; }
+    .demo-inner .section-lead { margin: 0 auto 40px; }
+    .upload-zone {
+      background: white; border: 2px dashed var(--teal-mid);
+      border-radius: 20px; padding: 56px 32px;
+      cursor: pointer; transition: border-color .2s, background .2s;
+      margin-bottom: 24px;
+    }
+    .upload-zone:hover { border-color: var(--teal); background: var(--teal-light); }
+    .upload-icon {
+      width: 64px; height: 64px; border-radius: 16px;
+      background: var(--teal-light); margin: 0 auto 20px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .upload-icon svg { width: 32px; height: 32px; stroke: var(--teal); fill: none; stroke-width: 1.5; }
+    .upload-zone h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 8px; }
+    .upload-zone p  { font-size: 0.85rem; color: var(--muted); }
+    .upload-zone p span { color: var(--teal); font-weight: 600; cursor: pointer; }
+    .demo-note {
+      background: #FEF9EC; border: 1px solid #F5D99A;
+      border-radius: 10px; padding: 12px 20px;
+      font-size: 0.83rem; color: #7D5400;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+
+    /* Result panel */
+    .result-panel {
+      background: white; border: 1px solid var(--border);
+      border-radius: 20px; padding: 32px; margin-top: 32px;
+      text-align: left; display: none;
+    }
+    .result-panel.show { display: block; animation: fadeUp .4s ease; }
+    .result-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+    .result-swatch {
+      width: 56px; height: 56px; border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+    }
+    .result-title { }
+    .result-title h3 { font-size: 1.2rem; font-weight: 700; }
+    .result-title span { font-size: 0.85rem; color: var(--muted); }
+    .confidence-bar { margin-bottom: 20px; }
+    .confidence-label { display: flex; justify-content: space-between; font-size: 0.82rem; color: var(--muted); margin-bottom: 6px; }
+    .confidence-track { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+    .confidence-fill { height: 100%; border-radius: 5px; transition: width 1.2s ease; }
+    .result-classes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 20px; }
+    .result-class {
+      text-align: center; padding: 10px 6px; border-radius: 10px;
+      border: 1px solid var(--border); font-size: 0.75rem;
+    }
+    .result-class .cls-name { font-weight: 600; margin-bottom: 4px; }
+    .result-class .cls-pct { color: var(--muted); }
+    .result-class.active { border-color: var(--teal); background: var(--teal-light); }
+    .result-disclaimer {
+      margin-top: 20px; padding: 12px 16px;
+      background: #FEF9EC; border: 1px solid #F5D99A;
+      border-radius: 8px; font-size: 0.8rem; color: #7D5400;
+    }
+
+    /* ── FOOTER ── */
+    footer {
+      background: var(--slate); color: #BCC7D4;
+      padding: 64px 48px 40px;
+    }
+    .footer-grid {
+      max-width: 1200px; margin: 0 auto;
+      display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px;
+      padding-bottom: 48px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .footer-brand { }
+    .footer-logo {
+      display: flex; align-items: center; gap: 10px;
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem; font-weight: 700;
+      color: white; text-decoration: none; margin-bottom: 16px;
+    }
+    .footer-desc { font-size: 0.85rem; line-height: 1.7; max-width: 280px; }
+    .footer-col h5 {
+      font-size: 0.78rem; font-weight: 700; color: white;
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 20px;
+    }
+    .footer-col ul { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+    .footer-col a { text-decoration: none; font-size: 0.88rem; color: #BCC7D4; transition: color .2s; }
+    .footer-col a:hover { color: var(--teal-mid); }
+    .footer-bottom {
+      max-width: 1200px; margin: 32px auto 0;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 0.82rem;
+    }
+    .footer-chips { display: flex; gap: 12px; }
+    .chip {
+      padding: 4px 12px; border-radius: 12px;
+      background: rgba(91,184,212,0.12); color: var(--teal-mid);
+      font-size: 0.75rem; font-weight: 600;
+    }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1024px) {
+      .hero-inner { grid-template-columns: 1fr; text-align: center; gap: 48px; }
+      .hero-sub { margin: 0 auto 36px; }
+      .hero-actions { justify-content: center; }
+      .hero-stats { justify-content: center; }
+      .hero-visual { order: -1; }
+      .about-grid { grid-template-columns: 1fr; gap: 48px; }
+      .grades-grid { grid-template-columns: repeat(3, 1fr); }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); gap: 32px; }
+      .steps-grid::before { display: none; }
+      .tech-grid { grid-template-columns: repeat(2, 1fr); }
+      .results-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 640px) {
+      section { padding: 64px 24px; }
+      nav { padding: 0 24px; }
+      h1 { font-size: 2.2rem; }
+      h2 { font-size: 1.8rem; }
+      .hero-inner { padding: 60px 24px; }
+      .grades-grid { grid-template-columns: repeat(2, 1fr); }
+      .steps-grid { grid-template-columns: 1fr; }
+      .tech-grid { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr; }
+      .result-classes { grid-template-columns: repeat(3, 1fr); }
+      nav .nav-links { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <a class="nav-logo" href="#">
+    <div class="logo-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+    </div>
+    Retina<span>AI</span><span class="dot">.</span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">About</a></li>
+    <li><a href="#grades">DR Grades</a></li>
+    <li><a href="#how">How It Works</a></li>
+    <li><a href="#tech">Tech Stack</a></li>
+    <li><a href="#results">Results</a></li>
+  </ul>
+  <a href="#demo" class="nav-cta">Try Demo</a>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span class="pulse"></span>
+        AI-Powered Medical Screening
+      </div>
+      <h1>Early Detection of<br/><em>Diabetic Retinopathy</em><br/>via Deep Learning</h1>
+      <p class="hero-sub">
+        A CNN-based system trained on high-resolution retina images to classify diabetic retinopathy severity — enabling faster, more accurate ophthalmological screening.
+      </p>
+      <div class="hero-actions">
+        <a href="#demo" class="btn-primary">Try Live Demo</a>
+        <a href="#how" class="btn-outline">See How It Works</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num">5</div>
+          <div class="stat-label">Severity Grades</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">56%+</div>
+          <div class="stat-label">Val. Accuracy</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">CNN</div>
+          <div class="stat-label">Architecture</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero-visual">
+      <div class="eye-card">
+        <div style="position:relative; margin-top: 32px;">
+          <div class="retina-circle"></div>
+          <div class="scan-line"></div>
+        </div>
+        <div class="analysis-tags">
+          <span class="tag tag-green">No DR Detected</span>
+          <span class="tag tag-yellow">Mild Signs</span>
+          <span class="tag tag-red">Proliferative</span>
+        </div>
+        <div style="padding: 0 24px 24px; width:100%;">
+          <div style="height: 6px; background: var(--border); border-radius: 3px; overflow: hidden;">
+            <div style="height:100%; width: 78%; background: linear-gradient(90deg, var(--teal), var(--teal-mid)); border-radius: 3px; animation: fillBar 2s ease infinite alternate;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-top: 8px; font-size: 0.75rem; color: var(--muted);">
+            <span>Confidence Analysis</span><span style="color: var(--teal); font-weight:700;">78%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<style>
+@keyframes fillBar {
+  from { width: 55%; }
+  to   { width: 92%; }
+}
+</style>
+
+<!-- ── ABOUT ── -->
+<section id="about">
+  <div class="section-inner">
+    <div class="about-grid">
+      <div class="about-text">
+        <span class="section-tag">The Problem</span>
+        <h2>Blindness That Can Be <em>Prevented</em></h2>
+        <p class="about-body">
+          Diabetic Retinopathy is a complication of diabetes that damages blood vessels in the retina.
+          It is one of the leading causes of blindness worldwide — yet with early detection, over 90% of vision loss is preventable.
+        </p>
+        <p class="about-body">
+          Traditional screening relies on trained ophthalmologists manually examining fundus images — a process that is slow, costly, and inaccessible in many regions.
+          This project automates that process using a deep Convolutional Neural Network trained on the Kaggle Diabetic Retinopathy dataset.
+        </p>
+        <div class="about-features">
+          <div class="feature-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            </div>
+            <div class="feature-text">
+              <h4>Distributed Training</h4>
+              <p>Uses TensorFlow MirroredStrategy for multi-GPU distributed training at scale.</p>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+            </div>
+            <div class="feature-text">
+              <h4>TensorFlow Serving Deployment</h4>
+              <p>Model exported and deployed via Docker + TF Serving for real-time REST inference.</p>
+            </div>
+          </div>
+          <div class="feature-row">
+            <div class="feature-icon">
+              <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+            </div>
+            <div class="feature-text">
+              <h4>5-Class Classification</h4>
+              <p>Classifies retina images across 5 severity grades — from No DR to Proliferative DR.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="pipeline-card">
+          <div class="pipeline-title">🔬 ML Pipeline</div>
+          <div class="pipeline-step"><div class="pipe-num">1</div><div class="pipe-bar">📁 Raw Retina Images + Labels CSV</div></div>
+          <div class="pipe-connector"></div>
+          <div class="pipeline-step"><div class="pipe-num">2</div><div class="pipe-bar">🔧 Preprocessing & Augmentation</div></div>
+          <div class="pipe-connector"></div>
+          <div class="pipeline-step"><div class="pipe-num">3</div><div class="pipe-bar">🧠 CNN Training (MirroredStrategy)</div></div>
+          <div class="pipe-connector"></div>
+          <div class="pipeline-step"><div class="pipe-num">4</div><div class="pipe-bar">📦 Export → TF SavedModel</div></div>
+          <div class="pipe-connector"></div>
+          <div class="pipeline-step"><div class="pipe-num">5</div><div class="pipe-bar">🐳 Docker + TF Serving (REST API)</div></div>
+          <div class="pipe-connector"></div>
+          <div class="pipeline-step"><div class="pipe-num">6</div><div class="pipe-bar">🔍 Inference Client → Grade Output</div></div>
+          <div class="accuracy-badge">
+            <div class="accuracy-num">56%+</div>
+            <div>
+              <div class="accuracy-label" style="font-weight:600; color: var(--slate);">Validation Accuracy</div>
+              <div class="accuracy-label">On Kaggle DR Dataset (custom CNN)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── GRADES ── -->
+<section id="grades">
+  <div class="section-inner">
+    <span class="section-tag">Classification</span>
+    <h2>Diabetic Retinopathy <em>Severity Grades</em></h2>
+    <p class="section-lead">The model classifies retinal images into 5 clinically-defined grades, enabling precise triage and clinical decision support.</p>
+    <div class="grades-grid">
+      <div class="grade-card g0">
+        <div class="grade-icon">👁️</div>
+        <div class="grade-label-num">Grade 0</div>
+        <div class="grade-name">No DR</div>
+        <div class="grade-desc">No signs of diabetic retinopathy detected. Healthy retinal vasculature.</div>
+      </div>
+      <div class="grade-card g1">
+        <div class="grade-icon">🔵</div>
+        <div class="grade-label-num">Grade 1</div>
+        <div class="grade-name">Mild</div>
+        <div class="grade-desc">Microaneurysms only. Earliest clinical sign of DR; typically no visual symptoms.</div>
+      </div>
+      <div class="grade-card g2">
+        <div class="grade-icon">🟡</div>
+        <div class="grade-label-num">Grade 2</div>
+        <div class="grade-name">Moderate</div>
+        <div class="grade-desc">More than microaneurysms but less than severe NPDR. Possible exudates and haemorrhages.</div>
+      </div>
+      <div class="grade-card g3">
+        <div class="grade-icon">🟠</div>
+        <div class="grade-label-num">Grade 3</div>
+        <div class="grade-name">Severe</div>
+        <div class="grade-desc">Significant vessel damage — haemorrhages in 4 quadrants. High risk of progression.</div>
+      </div>
+      <div class="grade-card g4">
+        <div class="grade-icon">🔴</div>
+        <div class="grade-label-num">Grade 4</div>
+        <div class="grade-name">Proliferative DR</div>
+        <div class="grade-desc">Neovascularisation present. Highest severity — risk of vitreous haemorrhage and blindness.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section id="how">
+  <div class="section-inner">
+    <span class="section-tag">Workflow</span>
+    <h2>How the <em>System Works</em></h2>
+    <p class="section-lead">From raw fundus image to classified severity grade in four key stages.</p>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-circle">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <h4>1. Upload Retina Image</h4>
+        <p>Clinician uploads a fundus photograph. The system accepts JPEG/PNG images of any resolution.</p>
+      </div>
+      <div class="step">
+        <div class="step-circle">
+          <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+        </div>
+        <h4>2. Preprocessing</h4>
+        <p>Image is resized, normalised, and optionally augmented to match the CNN input requirements.</p>
+      </div>
+      <div class="step">
+        <div class="step-circle">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 010 14.14M4.93 4.93a10 10 0 000 14.14"/></svg>
+        </div>
+        <h4>3. CNN Inference</h4>
+        <p>The trained CNN processes the image via TensorFlow Serving REST API and outputs class probabilities.</p>
+      </div>
+      <div class="step">
+        <div class="step-circle">
+          <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h4>4. Grade Classification</h4>
+        <p>The system outputs the predicted DR grade (0–4) with confidence scores for clinical review.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TECH STACK ── -->
+<section id="tech">
+  <div class="section-inner">
+    <span class="section-tag">Technology</span>
+    <h2>Built With <em>Modern ML Infrastructure</em></h2>
+    <p class="section-lead">A production-grade stack from data ingestion to real-time deployment.</p>
+    <div class="tech-grid">
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#FFF3E0;">🔷</div>
+        <h4>TensorFlow / Keras</h4>
+        <p>CNN architecture with MirroredStrategy for distributed multi-GPU training.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#E8F5E9;">🐍</div>
+        <h4>Python + OpenCV</h4>
+        <p>Image preprocessing, augmentation, and data loading pipelines built in Python.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#E3F2FD;">🐳</div>
+        <h4>Docker + TF Serving</h4>
+        <p>Model served via TensorFlow Serving inside a Docker container on port 8501.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#F3E5F5;">📊</div>
+        <h4>Pandas / Scikit-learn</h4>
+        <p>Data handling, resampling, splitting and model evaluation metrics.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#E0F7FA;">📦</div>
+        <h4>TF SavedModel</h4>
+        <p>Model exported in SavedModel format for portable, version-controlled serving.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#FFF8E1;">🏆</div>
+        <h4>Kaggle Dataset</h4>
+        <p>Trained on the Kaggle Diabetic Retinopathy 224×224 (2019) dataset with 5 classes.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#FCE4EC;">📓</div>
+        <h4>Jupyter Notebooks</h4>
+        <p>Exploratory data analysis and model experimentation in interactive notebooks.</p>
+      </div>
+      <div class="tech-card">
+        <div class="tech-logo" style="background:#E8EAF6;">🌐</div>
+        <h4>REST API</h4>
+        <p>TF Serving exposes a JSON REST endpoint for real-time image inference requests.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── RESULTS ── -->
+<section id="results">
+  <div class="section-inner">
+    <span class="section-tag">Performance</span>
+    <h2>Model <em>Results & Metrics</em></h2>
+    <p class="section-lead">Baseline CNN results. Transfer learning with EfficientNet or ResNet is recommended for higher accuracy in production.</p>
+    <div class="results-grid">
+      <div class="metric-cards">
+        <div class="metric-card">
+          <div class="metric-card-label">Validation Accuracy</div>
+          <div class="metric-card-val">56%+</div>
+          <div class="metric-card-note">Custom CNN baseline</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Training Strategy</div>
+          <div class="metric-card-val">Distributed</div>
+          <div class="metric-card-note">TF MirroredStrategy (multi-GPU)</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Deployment</div>
+          <div class="metric-card-val">Docker</div>
+          <div class="metric-card-note">TF Serving on port 8501</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-card-label">Dataset</div>
+          <div class="metric-card-val">5 Classes</div>
+          <div class="metric-card-note">Kaggle DR 224×224 (2019)</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Per-Class Performance Breakdown (estimated baseline)</div>
+        <div class="bar-row">
+          <div class="bar-label">No DR (Grade 0)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:72%; background: var(--green);"></div></div>
+          <div class="bar-pct">72%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Mild (Grade 1)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:48%; background: #3498DB;"></div></div>
+          <div class="bar-pct">48%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Moderate (Grade 2)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:55%; background: var(--warn);"></div></div>
+          <div class="bar-pct">55%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Severe (Grade 3)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:42%; background: #E67E22;"></div></div>
+          <div class="bar-pct">42%</div>
+        </div>
+        <div class="bar-row">
+          <div class="bar-label">Proliferative (4)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:60%; background: var(--danger);"></div></div>
+          <div class="bar-pct">60%</div>
+        </div>
+        <div style="margin-top: 28px; padding: 16px; background: var(--teal-light); border-radius: 10px; border: 1px solid var(--border);">
+          <div style="font-size: 0.82rem; font-weight: 600; color: var(--slate); margin-bottom: 8px;">🚀 Recommended Next Steps</div>
+          <div style="font-size: 0.82rem; color: var(--muted); line-height: 1.6;">
+            Transfer Learning with <strong>EfficientNetB0/B3</strong> or <strong>ResNet50</strong> is expected to push accuracy beyond 85%.
+            Hyperparameter tuning via KerasTuner and cloud deployment on AWS SageMaker / GCP Vertex AI are also planned.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── DEMO ── -->
+<section id="demo">
+  <div class="section-inner">
+    <div class="demo-inner">
+      <span class="section-tag">Live Demo</span>
+      <h2>Analyse a <em>Retinal Image</em></h2>
+      <p class="section-lead">Upload a retina fundus image and the model will predict the DR severity grade. Connect to your TF Serving endpoint for live inference.</p>
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()" id="uploadZone">
+        <div class="upload-icon">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        </div>
+        <h3>Drop your retina image here</h3>
+        <p>or <span>click to browse</span> — JPG, PNG up to 10 MB</p>
+        <input type="file" id="fileInput" style="display:none" accept="image/*" onchange="handleFile(event)"/>
+      </div>
+      <div class="demo-note" style="display:flex; flex-direction:column; gap:6px;">
+        <span>⚠️ Served by Flask — open <code style="background: rgba(0,0,0,0.05); padding:1px 5px; border-radius:4px;">http://localhost:5000</code> after running <code style="background: rgba(0,0,0,0.05); padding:1px 5px; border-radius:4px;">python app.py</code></span>
+        <span id="backendStatus" style="font-size:0.8rem; font-weight:600;">🔄 Checking backend…</span>
+      </div>
+
+      <div class="result-panel" id="resultPanel">
+        <div class="result-header">
+          <div class="result-swatch" id="resultSwatch" style="background: var(--accent);">✅</div>
+          <div class="result-title">
+            <h3 id="resultGrade">No Diabetic Retinopathy</h3>
+            <span id="resultSub">Grade 0 — No DR detected</span>
+          </div>
+        </div>
+        <div class="confidence-bar">
+          <div class="confidence-label"><span>Model Confidence</span><span id="confPct">--</span></div>
+          <div class="confidence-track"><div class="confidence-fill" id="confFill" style="width:0%; background: var(--green);"></div></div>
+        </div>
+        <img id="previewImg" src="" style="width:100%; border-radius:12px; max-height:280px; object-fit:cover; margin-bottom:16px; display:none; border:1px solid var(--border);"/>
+        <div class="result-classes" id="resultClasses"></div>
+        <div class="result-disclaimer">
+          ⚕️ <strong>Medical Disclaimer:</strong> This tool is for educational and research purposes only. Always consult a licensed ophthalmologist for clinical diagnosis and treatment decisions.
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-grid">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <div class="logo-icon" style="width:32px;height:32px;">
+          <svg viewBox="0 0 24 24" style="width:18px;height:18px;fill:white;"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z"/></svg>
+        </div>
+        RetinaAI
+      </div>
+      <p class="footer-desc">
+        An open-source deep learning project for automated Diabetic Retinopathy screening.
+        Built with TensorFlow and deployed via Docker + TF Serving.
+      </p>
+      <div style="margin-top: 20px; display:flex; gap:10px;">
+        <div class="chip">Python</div>
+        <div class="chip">TensorFlow</div>
+        <div class="chip">Docker</div>
+      </div>
+    </div>
+    <div class="footer-col">
+      <h5>Project</h5>
+      <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#grades">DR Grades</a></li>
+        <li><a href="#how">How It Works</a></li>
+        <li><a href="#results">Results</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Resources</h5>
+      <ul>
+        <li><a href="https://github.com/avesh-srivastava/cv-diabetic-retinopathy-detection" target="_blank">GitHub Repo</a></li>
+        <li><a href="https://www.kaggle.com/datasets/sovitrath/diabetic-retinopathy-224x224-2019-data" target="_blank">Kaggle Dataset</a></li>
+        <li><a href="#demo">Live Demo</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h5>Tech Stack</h5>
+      <ul>
+        <li><a href="#">TensorFlow Serving</a></li>
+        <li><a href="#">Docker</a></li>
+        <li><a href="#">OpenCV</a></li>
+        <li><a href="#">Scikit-learn</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2025 RetinaAI — For educational purposes only. Not for clinical use.</span>
+    <span style="color:#637381;">Made with ❤️ for healthcare AI</span>
+  </div>
+</footer>
+
+<script>
+  // ── CONFIG ───────────────────────────────────────────────────────────────
+  // Empty string = same server that's serving this page (http://localhost:5000)
+  // Change ONLY if your backend is on a different host
+  const API_BASE = "";
+
+  // ── Grade display metadata ────────────────────────────────────────────────
+  const GRADE_META = [
+    { emoji: '✅', bg: '#E8F6EC', color: '#27AE60' },
+    { emoji: '🔵', bg: '#EAF4FF', color: '#2980B9' },
+    { emoji: '⚠️', bg: '#FEF9EC', color: '#E67E22' },
+    { emoji: '🟠', bg: '#FEF0E6', color: '#E74C3C' },
+    { emoji: '🔴', bg: '#FDECEA', color: '#C0392B' },
+  ];
+  const CLASS_NAMES = ['No DR', 'Mild', 'Moderate', 'Severe', 'Proliferative'];
+
+  // ── Drag & Drop ───────────────────────────────────────────────────────────
+  const zone = document.getElementById('uploadZone');
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--teal)';
+    zone.style.background = 'var(--teal-light)';
+  });
+  zone.addEventListener('dragleave', () => {
+    zone.style.borderColor = 'var(--teal-mid)';
+    zone.style.background = 'white';
+  });
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.style.borderColor = 'var(--teal-mid)';
+    zone.style.background = 'white';
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) processFile(file);
+  });
+
+  function handleFile(e) {
+    const file = e.target.files[0];
+    if (file) processFile(file);
+  }
+
+  // ── Main upload + predict function ───────────────────────────────────────
+  async function processFile(file) {
+    // 1. Show image preview immediately
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.getElementById('previewImg');
+      img.src = e.target.result;
+      img.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+
+    // 2. Show loading state
+    showLoading();
+
+    // 3. Build FormData and POST to backend
+    const formData = new FormData();
+    formData.append('image', file);
+
+    try {
+      const response = await fetch(`${API_BASE}/api/predict`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        showError(data.error || `Server error (${response.status})`);
+        return;
+      }
+
+      // 4. Render real result
+      renderResult(data);
+
+    } catch (err) {
+      // Network / CORS / server-down error
+      if (err.message.includes('fetch') || err.name === 'TypeError') {
+        showError(
+          'Cannot connect to backend. Make sure the Flask server is running:\n' +
+          'python app.py'
+        );
+      } else {
+        showError(`Unexpected error: ${err.message}`);
+      }
+    }
+  }
+
+  // ── Render prediction result ──────────────────────────────────────────────
+  function renderResult(data) {
+    const grade  = data.grade;
+    const meta   = GRADE_META[grade];
+    const conf   = Math.round(data.confidence * 100);
+    const probs  = data.probabilities;
+    const info   = data.grade_info;
+
+    // Header
+    document.getElementById('resultGrade').textContent = data.name;
+    document.getElementById('resultSub').textContent =
+      `Grade ${grade} — ${info.description}`;
+    document.getElementById('resultSwatch').textContent = meta.emoji;
+    document.getElementById('resultSwatch').style.background = meta.bg;
+
+    // Confidence bar
+    document.getElementById('confPct').textContent = conf + '%';
+    const fill = document.getElementById('confFill');
+    fill.style.background = meta.color;
+    fill.style.width = '0%';
+    setTimeout(() => { fill.style.width = conf + '%'; }, 100);
+
+    // Recommendation badge
+    let recEl = document.getElementById('resultRec');
+    if (!recEl) {
+      recEl = document.createElement('div');
+      recEl.id = 'resultRec';
+      recEl.style.cssText = `
+        margin: 12px 0 16px;
+        padding: 10px 16px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border: 1px solid ${meta.color}44;
+        background: ${meta.bg};
+        color: ${meta.color};
+      `;
+      document.getElementById('confFill').closest('.confidence-bar')
+        .insertAdjacentElement('afterend', recEl);
+    }
+    recEl.textContent = '🩺 ' + info.recommendation;
+    recEl.style.background = meta.bg;
+    recEl.style.color = meta.color;
+    recEl.style.borderColor = meta.color + '55';
+
+    // Class probability bars
+    const cls = document.getElementById('resultClasses');
+    cls.innerHTML = '';
+    probs.forEach((p, i) => {
+      const el = document.createElement('div');
+      el.className = 'result-class' + (i === grade ? ' active' : '');
+      el.innerHTML = `
+        <div class="cls-name">${CLASS_NAMES[i]}</div>
+        <div class="cls-pct">${Math.round(p * 100)}%</div>
+      `;
+      cls.appendChild(el);
+    });
+
+    // Mode badge
+    let modeEl = document.getElementById('inferenceMode');
+    if (!modeEl) {
+      modeEl = document.createElement('div');
+      modeEl.id = 'inferenceMode';
+      modeEl.style.cssText = 'font-size:0.72rem; color: var(--muted); margin-top:12px; text-align:right;';
+      document.getElementById('resultClasses').insertAdjacentElement('afterend', modeEl);
+    }
+    modeEl.textContent = `Inference mode: ${data.mode}`;
+
+    // Show panel
+    const panel = document.getElementById('resultPanel');
+    panel.classList.add('show');
+    panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  // ── Loading state ─────────────────────────────────────────────────────────
+  function showLoading() {
+    document.getElementById('resultGrade').textContent = 'Analysing image…';
+    document.getElementById('resultSub').textContent = 'Running CNN inference';
+    document.getElementById('resultSwatch').textContent = '⏳';
+    document.getElementById('resultSwatch').style.background = 'var(--teal-light)';
+    document.getElementById('confPct').textContent = '—';
+    document.getElementById('confFill').style.width = '0%';
+    document.getElementById('resultClasses').innerHTML = '';
+    document.getElementById('resultPanel').classList.add('show');
+
+    // Animated loading bar
+    const fill = document.getElementById('confFill');
+    fill.style.background = 'var(--teal)';
+    fill.style.transition = 'width 1.5s ease';
+    fill.style.width = '60%';
+  }
+
+  // ── Error state ───────────────────────────────────────────────────────────
+  function showError(message) {
+    document.getElementById('resultGrade').textContent = 'Error';
+    document.getElementById('resultSub').textContent = message;
+    document.getElementById('resultSwatch').textContent = '❌';
+    document.getElementById('resultSwatch').style.background = '#FDECEA';
+    document.getElementById('confPct').textContent = '—';
+    document.getElementById('confFill').style.width = '0%';
+    document.getElementById('resultClasses').innerHTML = '';
+    document.getElementById('resultPanel').classList.add('show');
+  }
+
+  // ── Check backend health on page load ────────────────────────────────────
+  window.addEventListener('load', async () => {
+    try {
+      const r = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
+      const data = await r.json();
+      const indicator = document.getElementById('backendStatus');
+      if (indicator) {
+        indicator.textContent = data.model_ready
+          ? '🟢 Backend connected'
+          : '🟡 Backend connected (model not loaded)';
+        indicator.style.color = data.model_ready ? '#27AE60' : '#E67E22';
+      }
+    } catch {
+      const indicator = document.getElementById('backendStatus');
+      if (indicator) {
+        indicator.textContent = '🔴 Backend offline — run: python app.py';
+        indicator.style.color = '#E74C3C';
+      }
+    }
+  });
+
+  // ── Animate results bar chart on scroll ──────────────────────────────────
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.querySelectorAll('.bar-fill').forEach(bar => {
+          const w = bar.style.width;
+          bar.style.width = '0%';
+          setTimeout(() => { bar.style.width = w; }, 200);
+        });
+      }
+    });
+  }, { threshold: 0.3 });
+  document.querySelectorAll('.chart-card').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
